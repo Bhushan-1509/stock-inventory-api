@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from models import User, Company, RawMaterial, Item
+from models import User, Company, RawMaterial, Item, Order
 from mongoengine import connect
 from flask_cors import CORS
 import json
@@ -206,7 +206,7 @@ def add_material():
                 cutting_weight = data['cutting_weight'],
                 order_no= data['order_no'],
                 order_size = data['order_size']
-                ).save()
+              ).save()
         return jsonify({"status":"success"}), 201
     return jsonify({'res':'Request cannot be processed'}),406
 
@@ -225,14 +225,39 @@ def remove_material():
 def add_item():
     if request.method == 'POST' and request.headers.get('source-name') == 'streamlining-inventory-management':
         data = request.get_json(force=True)
-        if type(data) is str:
+        if type(data) is type(' '):
             data = json.loads(data)
         result = Item(
                 item = data['item'],
                 rod_diameter = data['rod_diameter'],
-                line_weight = data['line_weight'],
+                #line_weight = data['line_weight'],
                 unit_price = data['unit_price'],
                 quantity = data['quantity'],
                 total = data['total']
                 ).save()
+        return jsonify({"status": "success"}), 201
 
+
+@app.route('/item', methods=['GET'])
+def get_items():
+    if request.method == 'GET':
+        all_items = Item.objects
+        items = []
+        for item in all_items:
+            items.append(dict({"item_name" : item.item}));
+        return jsonify({"Items:": items}), 200
+
+@app.route('/add-order', methods=['POST'])
+def add_order():
+    if request.method == 'POST' and request.headers.get('source-name') == 'streamlining-inventory-management':
+        data = request.get_json(force=True)
+        if type(data) is type(" "):
+            data = json.loads(data)
+        result = Order(
+           # company_name = data['company_name'],
+            order_no = data['order_no'],
+            rate= data['rate'],
+            items= str(data['items'])
+                ).save()
+        if result:
+            return jsonify({'Status': "success"}), 201
