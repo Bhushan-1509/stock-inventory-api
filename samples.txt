@@ -1,0 +1,13 @@
+{
+    "name":"Larson and tubro",
+    "address": "Mumbai",
+    "city":"Mumbai",
+    "pincode": "300423",
+    "state": "Maharashtra",
+    "gst_no": "GGGGGGGGGGGGGGG",
+    "company_in_sez":"Yes",
+    "company_type": "Supplier",
+    "supplier_type": "Our",
+    "distance_from_andheri": "34.4",
+    "distance_from_vasai": "45"
+}
