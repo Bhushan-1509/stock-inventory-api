@@ -32,7 +32,7 @@ app = Flask(__name__)
 with open('config.json') as config_file:
     config = json.load(config_file)
 # connect(host="mongodb+srv://{username}:{password}@{dbName}/?retryWrites=true&w=majority".format(username=config['database_username'],password=config['database_password'],dbName=config['database_server']),db="ims")
-connect(host='mongodb://172.31.37.100:27017/stock-and-inventory')
+connect(host='mongodb://localhost:27017/stock-and-inventory')
 @app.route('/')
 def index():
     return jsonify({"status":"working"}),200

@@ -39,3 +39,11 @@ class Item(Document):
     unit_price = StringField(max_length=255)
     quantity = StringField(max_length=255)
     total = StringField(max_length=255)
+
+
+class Order(Document):
+    order_no = StringField(max_length=255)
+    rate = StringField(max_length=255)
+    items = StringField()
+
+    
