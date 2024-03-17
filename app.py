@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from models import User, Company, RawMaterial, Item, Order
 from mongoengine import connect
 from flask_cors import CORS
@@ -205,7 +205,8 @@ def add_material():
                 cutting_size = data['cutting_size'],
                 cutting_weight = data['cutting_weight'],
                 order_no= data['order_no'],
-                order_size = data['order_size']
+                order_size = data['order_size'],
+                stage = data['stage']
               ).save()
         return jsonify({"status":"success"}), 201
     return jsonify({'res':'Request cannot be processed'}),406
@@ -261,3 +262,8 @@ def add_order():
                 ).save()
         if result:
             return jsonify({'Status': "success"}), 201
+
+
+@app.route('/track')
+def track():
+    return render_template("track.html")

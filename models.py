@@ -31,6 +31,7 @@ class RawMaterial(Document):
     cutting_weight =  StringField(max_length=255)
     order_no = StringField(max_length=255)
     order_size = StringField(max_length=255)
+    stage = StringField()
 
 class Item(Document):
     item = StringField(max_length=255)
