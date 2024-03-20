@@ -8,20 +8,12 @@ import re
 
 def isValidMasterCardNo(str):
 
-    # Regex to check valid 
-    # GST (Goods and Services Tax) number 
+   
     regex = "^[0-9]{2}[A-Z]{5}[0-9]{4}" + "[A-Z]{1}[1-9A-Z]{1}" +  "Z[0-9A-Z]{1}$"
 
-    # Compile the ReGex
     p = re.compile(regex)
-
-    # If the string is empty 
-    # return false
     if (str == None):
         return False
-
-    # Return if the string 
-    # matched the ReGex
     if(re.search(p, str)):
         return True
     else:
@@ -44,11 +36,12 @@ def index():
 def register():
     if request.method == 'POST' and request.headers.get('source-name') == 'streamlining-inventory-management':
         data = request.get_json(force=True)
-        existing_users_by_email = User.objects(email=data['email'])
         existing_users_by_username = User.objects(username=data['username'])
-        if existing_users_by_email or existing_users_by_username:
+        if not data['username'] or not data['password']:
+            return jsonify({'message': 'Username and password are required'}), 400
+        if existing_users_by_username:
             return jsonify({"result":"User already exists"}),409
-        user = User(username=data['username'],email=data['email'], password=hashlib.md5(data['password'].encode()).hexdigest())
+        user = User(username=data['username'],name=data['name'], password=hashlib.md5(data['password'].encode()).hexdigest())
         result = user.save()
         if result:
             return jsonify({"status":"success"}), 201
@@ -60,10 +53,12 @@ def login():
     if request.method == 'POST' and request.headers.get('source-name') == 'streamlining-inventory-management':
         data = request.get_json(force=True)
         user = User.objects(username=data['username'],password=hashlib.md5(data['password'].encode()).hexdigest())       
+        if not data['username'] or not data['password']:
+            return jsonify({'message': 'Username and password are required'}), 400
         if user:
-            return jsonify({'username':user[0]['username'],'email': user[0]['email']}),200 
+            return jsonify({'username':user[0]['username']}),200 
         else:
-            return {"result":"no user found"},404 
+            return {"result":"Invalid username or password"},401 
     else:
        return jsonify({'res':'Request cannot be processed'}),406    
 
@@ -73,10 +68,6 @@ def delete_user():
         data = request.get_json(force=True)
         if data['username']:
             user = User.objects(username=data['username'])
-            user[0].delete()
-            return jsonify({"status":"sucesss"}),202
-        elif data['email']:
-            user = User.objects(email=data['email'])  
             user[0].delete()
             return jsonify({"status":"sucesss"}),202
         else: 
@@ -90,8 +81,7 @@ def get_company():
     all_companies = Company.objects
     companies = []
     for company in all_companies:
-        companies.append(dict({"name": company.name
-            })) 
+        companies.append(dict({"uuid": company.uuid, "name": company.name })) 
     return jsonify({"companies": companies})
 
 @app.route('/company/<name>', methods = ['GET','POST'])  
@@ -99,6 +89,7 @@ def specific_company(name):
     if request.method == 'GET':
         company = (Company.objects(name=name))
         company_name = {
+                "uuid" : company[0].uuid,
                 "name" : company[0].name,
                 "address": company[0].address,
                     "city": company[0].city,
@@ -170,19 +161,24 @@ def remove_company():
 
 
 # Raw material routes
-@app.route('/raw-material')
+@app.route('/raw-material', methods=['GET'])
 def get_materials():
-    all_raw_materials = RawMaterial.objects
-    raw_materials = []
-    for raw_material in all_raw_materials:
-        raw_materials.append(dict({"name": raw_material.item_name
-            })) 
-    return jsonify({"raw_materials": raw_materials})
+    if request.method == 'GET' and request.arg.get('uuid'):
+        raw_material = RawMaterial.objects(uuid=str(request.arg.get('uuid')))
+        json_res = {'uuid' : raw_material.uuid, 'stage':3, 'quantity' : raw_material.quantity, 'completed_quantity': raw_material.completed_quantituy, 'size' : raw_material.size}
+    if request.method == 'GET':
+        all_raw_materials = RawMaterial.objects
+        raw_materials = []
+        for raw_material in all_raw_materials:
+            raw_materials.append(dict({"uuid": raw_material.uuid, "name": raw_material.item_name, "size" : raw_material.size
+                })) 
+        return jsonify({"raw_materials": raw_materials})
 
 @app.route('/raw-material/<name>')  
 def get_specific_material(name):
     raw_material = (RawMaterial.objects(item_name=name))
     raw_material_name = {
+            "uuid" : raw_material[0].uuid,
             "name" : raw_material[0].item_name
             }
     return jsonify(raw_material_name)
@@ -221,6 +217,7 @@ def remove_material():
             return jsonify({"status":"sucesss"}),202
         else:
             return jsonify({"status":"not found"}),404
+        
 
 @app.route('/add-item', methods=['POST'])
 def add_item():
@@ -242,11 +239,17 @@ def add_item():
 @app.route('/item', methods=['GET'])
 def get_items():
     if request.method == 'GET':
-        all_items = Item.objects
-        items = []
-        for item in all_items:
-            items.append(dict({"item_name" : item.item}));
-        return jsonify({"Items:": items}), 200
+        all_orders = Order.objects
+        print(all_orders)
+        all_items = []
+        for order in all_orders:
+            items = order.items
+            order_no = order.order_no
+            order_items = json.loads(items)
+            for item in order_items:
+                single_item = {'uuid': item['uuid'], 'item_name': item['item_name'], 'stage':  item['stage'], 'order_no': order_no, 'total_quantity': item['quantity']}
+                all_items.append(single_item)
+        return jsonify({"Items": all_items}), 200
 
 @app.route('/add-order', methods=['POST'])
 def add_order():
@@ -262,8 +265,28 @@ def add_order():
                 ).save()
         if result:
             return jsonify({'Status': "success"}), 201
+        
 
-
+@app.route('/orders', methods=['GET'])
+def get_orders():
+    if request.method == 'GET':
+        all_orders = Order.objects
+        orders = []
+        for order in all_orders:
+            new_order = {'uuid': order.uuid, 'order_no': order.no}        
+            orders.append(new_order)
+        return jsonify({"orders": orders})
+    
+@app.route('/users', methods=['GET'])
+def get_users():
+    if request.method == 'GET':
+        all_users = User.objects
+        users = []
+        for user in all_users:
+            new_user = {'uuid': user.uuid, 'username': user.username, 'name': user.name}
+            users.append(new_user)
+        return jsonify({"Users": users})
+    
 @app.route('/track')
 def track():
     return render_template("track.html")
