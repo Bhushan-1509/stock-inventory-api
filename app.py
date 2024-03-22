@@ -299,7 +299,7 @@ def get_orders():
         all_orders = Order.objects
         orders = []
         for order in all_orders:
-            new_order = {'uuid': order.uuid, 'order_no': order.no}        
+            new_order = {'uuid': order.uuid, 'order_no': order.order_no}        
             orders.append(new_order)
         return jsonify({"orders": orders})
     
