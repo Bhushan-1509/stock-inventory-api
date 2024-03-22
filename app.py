@@ -75,6 +75,32 @@ def delete_user():
 
     return jsonify({'res':'Request cannot be processed'}),406
 
+
+@app.route('/edit-user', methods=['POST'])
+def edit_user():
+    if request.method == 'POST' and request.headers.get('source-name') == 'streamlining-inventory-management':
+        data = request.get_json(force=True)
+        if data['username']:
+            user = User.objects(username=data['username']).first()
+            if data['new_username']:
+                user.username = data['new_username']
+                user.save()
+                return jsonify({"status":"sucesss"}),200
+            if data['new_password']:
+                user.password = hashlib.md5(data['new_password'].encode()).hexdigest()
+                user.save()
+                return jsonify({"status": "successs"}), 200
+            if data['new_name']:
+                user.name = data['new_name']
+                user.save()
+                return jsonify({"status": "successs"}), 200
+                    
+    else: 
+        return jsonify({'res':'Request cannot be processed'}),406
+
+        
+
+    
 # Company routes
 @app.route('/company')  
 def get_company():
